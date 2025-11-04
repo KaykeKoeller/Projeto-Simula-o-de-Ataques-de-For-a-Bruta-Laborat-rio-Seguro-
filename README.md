@@ -1,6 +1,7 @@
 # Projeto: Simulação de Ataques de Força Bruta (Laboratório Seguro)
 
 **Idioma:** Português (pt-BR)
+**Language:** English
 
 ---
 
@@ -62,7 +63,7 @@ Durante o processo, pratiquei controle de versão com Git/GitHub (chaves SSH, co
 ## 7. Conclusão
 O desafio foi além de uma simples simulação: serviu como exercício de análise crítica, escrita técnica e postura ética. Entendi que um profissional de segurança deve saber identificar vulnerabilidades, mas igualmente saber documentar, mitigar e comunicar riscos de forma responsável.
 
-> “Segurança não é um estado fixo — é um processo contínuo.”
+> “A maior ameaça à segurança da informação é acreditar que você está seguro.”
 
 ---
 
@@ -70,3 +71,72 @@ O desafio foi além de uma simples simulação: serviu como exercício de análi
 Este material é parte de um trabalho educacional realizado exclusivamente em ambiente controlado. Ao publicar qualquer evidência ou relatório, recomenda-se sempre sanitizar dados sensíveis e explicitar o propósito e o escopo do experimento.
 
 ---
+
+# Project: Brute-Force Simulation (Secure Lab)
+
+---
+
+## Exercise Summary
+In this exercise I applied Offensive Security and Vulnerability Management concepts in an isolated, fully controlled lab environment. The goal was to simulate brute-force and password spraying scenarios for educational purposes, gather sanitized evidence, and evaluate mitigation measures.
+
+### Lab Setup
+- **Kali Linux** — attacker machine.  
+- **Metasploitable 2** — vulnerable target VM.  
+- **Host-Only Network (VirtualBox)** — direct and isolated communication between the VMs.
+
+---
+
+## 1. Service Enumeration
+The first step was identifying active services on the target VM. I discovered services such as FTP, SSH, HTTP, SMB, and MySQL, which defined the attack vectors for subsequent evaluations.
+
+This stage highlights the importance of reconnaissance: gathering service information is the foundation of any security audit.
+
+---
+
+## 2. FTP Brute-Force Tests
+After identifying a vulnerable FTP service, I performed controlled automated authentication attempts against the `ftp` account. The test confirmed weak credentials and demonstrated how simple passwords can quickly compromise a service.
+
+> Lesson: weak password policies expose entire systems — strong authentication is essential.
+
+---
+
+## 3. SMB Password Spraying
+I enumerated user accounts on the SMB server and performed a password spraying exercise (testing common passwords against multiple users). In this specific experiment I **managed to gain access** to one system account, demonstrating the effectiveness of this technique against weak credentials.
+
+**Note:** lack of success in other tests is also valuable information and contributes to a complete security assessment.
+
+---
+
+## 4. SSH and MySQL Tests
+Controlled authentication attempts were made against SSH (user `msfadmin`) and MySQL. No compromises were observed in these services, reinforcing that mapping both weaknesses and resilient points is important for a full attack surface assessment.
+
+---
+
+## 5. Evidence Collection and Documentation
+All findings were recorded and organized with attention to anonymization and data safety:
+- Sanitized files in `/outputs` (no real passwords);
+- Technical report in `report.md`;
+- Project structure versioned and prepared for GitHub (example repository pattern `username/repo-lab`).
+
+During the process I practiced version control with Git/GitHub (SSH keys, commits, pushes, and Markdown documentation).
+
+---
+
+## 6. Technical and Conceptual Takeaways
+- Building isolated labs with VirtualBox Host-Only networks;  
+- Using open-source tools for reconnaissance and lab auditing;  
+- Workflow: reconnaissance → controlled testing → evidence collection → analysis → mitigation;  
+- The importance of ethics and scoped authorization for testing;  
+- How to document technical results clearly, safely, and verifiably.
+
+---
+
+## 7. Conclusion
+This exercise went beyond a mere attack simulation: it was an exercise in critical thinking, technical writing, and ethical conduct. A security professional must not only find vulnerabilities but also document, mitigate, and communicate risks responsibly.
+
+> "The biggest threat to information security is believing you are secure."
+
+---
+
+## Final Notes
+This material is part of an educational project executed exclusively in a controlled environment. When publishing evidence or reports, always sanitize sensitive data and clearly state the experiment’s purpose and scope.
