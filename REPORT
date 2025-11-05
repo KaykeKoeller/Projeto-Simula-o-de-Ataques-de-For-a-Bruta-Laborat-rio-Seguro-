@@ -1,0 +1,147 @@
+# Relatório Técnico — Testes de Força Bruta e Password Spraying (Laboratório Seguro)
+
+**Autor:** Kayke Koeller de Moraes
+
+**Data:** 2025-11-04
+
+**Ambiente:** Laboratório isolado com VMs (Kali Linux como atacante; Metasploitable 2 como alvo). Rede Host-Only no VirtualBox.
+
+---
+
+## 1. Objetivo
+
+Documentar de forma técnica e auditável os experimentos educacionais realizados para avaliar riscos relacionados a tentativas automatizadas de autenticação (força-bruta e password spraying) em um ambiente controlado. O relatório reúne metodologia, evidências sanitizadas, resultados, análise e recomendações de mitigação.
+
+---
+
+## 2. Escopo e limitações
+
+**Escopo:** serviços presentes na VM alvo (FTP, SMB, SSH, HTTP, MySQL) com foco em:
+
+* Testes de força-bruta conceituais contra serviço FTP;
+* Testes de password spraying conceituais contra serviço SMB;
+* Verificação controlada de autenticação em serviços SSH e MySQL.
+
+**Limitações e ética:** todos os testes foram executados em ambiente proprietário e isolado. Comandos operacionais, scripts e wordlists completas foram mantidos fora do repositório público por questões éticas e de segurança; apenas resultados e evidências sanitizadas são publicados.
+
+---
+
+## 3. Preparação do laboratório
+
+* Criação das VMs: Kali Linux (atacante) e Metasploitable 2 (alvo).
+* Rede configurada em modo Host-Only no VirtualBox para garantir isolamento.
+* Snapshots salvos antes de cada etapa experimental para permitir restauração.
+* Ferramentas auxiliares para coleta: captura de pacotes (PCAP), screenshots, logs do sistema do alvo.
+
+> **Observação:** conservar os comandos completos e as wordlists em um repositório privado e protegido (não publicar publicamente).
+
+---
+
+## 4. Metodologia (descrição conceitual)
+
+### 4.1 Reconhecimento
+
+* Identificação de portas e serviços ativos no alvo para definir vetores de avaliação.
+* Coleta de informações iniciais que guiaram as etapas subsequentes.
+
+### 4.2 Testes controlados de força-bruta (FTP)
+
+* Objetivo: demonstrar o impacto de senhas fracas em um serviço FTP vulnerável.
+* Metodologia: realizar tentativas automatizadas de autenticação contra a conta `ftp` utilizando uma wordlist reduzida e controlada.
+* Evidências coletadas: logs de autenticação do alvo, captura de tráfego filtrada por porta FTP, contagem de tentativas e timestamps.
+
+### 4.3 Password spraying (SMB)
+
+* Objetivo: demonstrar a técnica de password spraying — poucas senhas comuns testadas contra muitos usuários.
+* Metodologia: enumeração de usuários seguida de tentativas restritas e espaçadas para reduzir bloqueios por rate-limiting.
+* Resultado: **acesso obtido** em ao menos uma conta do sistema durante o experimento; registro das condições e mitigadores observados.
+
+> **Observação geral:** a execução de testes foi realizada respeitando intervalo entre tentativas e limites operacionais do laboratório. A ausência de comprometimentos em outros serviços também foi registrada como dado relevante.
+
+---
+
+## 5. Evidências (sanitizadas)
+
+A seguir estão os locais e descrições das evidências coletadas. **Os arquivos originais foram sanitizados para remoção de credenciais e detalhes sensíveis antes de inclusão neste repositório.**
+
+* `evidencias/pcaps/` — PCAPs filtrados contendo fluxos relevantes (por exemplo, tráfego FTP/SMB). Arquivos renomeados e com metadados removidos.
+* `evidencias/screenshots/` — capturas de tela dos momentos significativos do teste (interfaces, mensagens). Sensíveis ofuscados.
+* `evidencias/logs/` — extratos de logs do alvo (entradas de autenticação), truncados e anonimizados.
+* `report.md` — este documento com resumo técnico e análise.
+
+**Exemplo de item de evidência:**
+
+* `evidencias/pcaps/2025-11-03_ftp_filtered.pcap` — PCAP contendo apenas os pacotes de controle relevantes para análise (IP e payloads sensíveis removidos).
+
+---
+
+## 6. Resultados quantitativos
+
+> As métricas abaixo são apresentadas em forma agregada e sem expor dados sensíveis.
+
+* Número total de tentativas (FTP): 10 (wordlist reduzida, taxa controlada)
+* Achados (FTP): credenciais fracas confirmadas para a conta `ftp` (registro em logs, sucesso de autenticação)
+* Número de usuários SMB enumerados: 2
+* Tentativas de password spraying (SMB): 6 tentativas distribuídas entre usuários
+* Achados (SMB): acesso confirmado para 1 conta do sistema
+* Testes SSH/MySQL: sem compromissos observados
+
+> Observação: valores acima são exemplos de agregação; inclua aqui os números reais do seu experimento ao preencher o relatório final.
+
+---
+
+## 7. Análise e interpretação
+
+* **Impacto:** credenciais fracas no FTP e exposição de contas facilmente adivinháveis representam risco de escalonamento e movimento lateral se não mitigadas.
+* **Resiliência parcial:** ausência de sucesso em SSH/MySQL indica camadas adicionais de proteção ou senhas menos previsíveis nesses serviços.
+* **Password spraying bem-sucedido:** demonstra que mesmo com proteções locais, senhas fracas e ausência de MFA podem levar a compromissos.
+
+---
+
+## 8. Detecção e recomendações (práticas)
+
+### 8.1 Regras de detecção (exemplos conceituais)
+
+* **Agregação de falhas por IP:** alertar quando um mesmo IP gera N falhas de autenticação em janela temporal curta.
+* **Agregação de falhas por usuário:** detectar tentativas repetidas contra a mesma conta vindo de múltiplos IPs.
+
+*Sugestões de implementação:* utilize correladores/SIEM para agregar eventos, ou consultas osquery para checar logs locais.
+
+### 8.2 Mitigações recomendadas
+
+* Implementar **MFA** para serviços sensíveis.
+* Adotar **rate limiting** e mecanismo de bloqueio temporário (com políticas de desbloqueio seguras).
+* Aplicar **políticas de senha** e checar senhas contra listas de comprometidas.
+* Monitorar e alertar sobre padrões de autenticação anômalos.
+* Registrar e auditar logs de autenticação centralmente.
+
+---
+
+## 9. Plano de remediação proposto
+
+1. Atualizar políticas de senha e exigir MFA;
+2. Ajustar regras de bloqueio e rate limiting no servidor;
+3. Revisar contas com acesso remoto e remover privilégios desnecessários;
+4. Implementar detecção contínua (SIEM/IDS) e playbooks de resposta a incidentes;
+5. Executar nova rodada de testes após mitigação para validar eficácia.
+
+---
+
+## 10. Apêndice
+
+### 10.1 Checklist pré-teste
+
+* [ x ] Snapshots criados
+* [ x ] Ambiente isolado confirmado
+* [ x ] Ferramentas de coleta prontas (PCAP, logs)
+* [ x ] Wordlists e scripts mantidos em repositório privado
+
+### 10.2 Local seguro para comandos e wordlists
+
+Mantenha todos os comandos operacionais, scripts e wordlists em um repositório privado com acesso controlado; não publique esses artefatos em repositórios públicos.
+
+---
+
+## 11. Conclusão
+
+Este exercício destacou a importância de controles preventivos (MFA, políticas de senha, rate limiting) e de detecção efetiva para identificar tentativas automatizadas de autenticação. A documentação cuidadosa e a sanitização das evidências garantem que os resultados possam ser compartilhados sem comprometer a segurança do laboratório.
