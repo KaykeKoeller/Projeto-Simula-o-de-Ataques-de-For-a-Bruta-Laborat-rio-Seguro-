@@ -10,7 +10,7 @@
 
 ## 1. Objetivo
 
-Documentar de forma técnica e auditável os experimentos educacionais realizados para avaliar riscos relacionados a tentativas automatizadas de autenticação (força-bruta e password spraying) em um ambiente controlado. O relatório reúne metodologia, evidências sanitizadas, resultados, análise e recomendações de mitigação.
+Documentar de forma técnica e auditável os experimentos educacionais realizados para avaliar riscos relacionados a tentativas automatizadas de autenticação (força-bruta e password spraying) em um ambiente controlado. O relatório reúne metodologia, resultados, análise e recomendações de mitigação.
 
 ---
 
@@ -22,7 +22,7 @@ Documentar de forma técnica e auditável os experimentos educacionais realizado
 * Testes de password spraying conceituais contra serviço SMB;
 * Verificação controlada de autenticação em serviços SSH e MySQL.
 
-**Limitações e ética:** todos os testes foram executados em ambiente proprietário e isolado. Comandos operacionais, scripts e wordlists completas foram mantidos fora do repositório público por questões éticas e de segurança; apenas resultados e evidências sanitizadas são publicados.
+**Limitações e ética:** todos os testes foram executados em ambiente proprietário e isolado. Comandos operacionais, scripts e wordlists completas foram mantidos fora do repositório público por questões éticas e de segurança; apenas resultados e relatórios sanitizados são publicados.
 
 ---
 
@@ -48,7 +48,7 @@ Documentar de forma técnica e auditável os experimentos educacionais realizado
 
 * Objetivo: demonstrar o impacto de senhas fracas em um serviço FTP vulnerável.
 * Metodologia: realizar tentativas automatizadas de autenticação contra a conta `ftp` utilizando uma wordlist reduzida e controlada.
-* Evidências coletadas: logs de autenticação do alvo, captura de tráfego filtrada por porta FTP, contagem de tentativas e timestamps.
+* Evidências correlatas: logs de autenticação do alvo, captura de tráfego filtrada por porta FTP, contagem de tentativas e timestamps.
 
 ### 4.3 Password spraying (SMB)
 
@@ -60,18 +60,80 @@ Documentar de forma técnica e auditável os experimentos educacionais realizado
 
 ---
 
-## 5. Evidências (sanitizadas)
+## 5. Caso prático (documentação didática): Medusa e FTP
 
-A seguir estão os locais e descrições das evidências coletadas. **Os arquivos originais foram sanitizados para remoção de credenciais e detalhes sensíveis antes de inclusão neste repositório.**
+> Nota de ética: o conteúdo desta seção é de caráter **educacional** e descreve sintaxe e exemplos utilizados apenas no laboratório controlado. Não execute varreduras ou testes em alvos sem autorização explícita.
 
-* `evidencias/pcaps/` — PCAPs filtrados contendo fluxos relevantes (por exemplo, tráfego FTP/SMB). Arquivos renomeados e com metadados removidos.
-* `evidencias/screenshots/` — capturas de tela dos momentos significativos do teste (interfaces, mensagens). Sensíveis ofuscados.
-* `evidencias/logs/` — extratos de logs do alvo (entradas de autenticação), truncados e anonimizados.
-* `report.md` — este documento com resumo técnico e análise.
+### 5.1 Sintaxe básica (resumo)
 
-**Exemplo de item de evidência:**
+A sintaxe conceitual usada para a ferramenta de auditoria segue o padrão:
 
-* `evidencias/pcaps/2025-11-03_ftp_filtered.pcap` — PCAP contendo apenas os pacotes de controle relevantes para análise (IP e payloads sensíveis removidos).
+```
+medusa -h <target IP> -U <arquivo_usuarios> -P <arquivo_senhas> -M <módulo> -t <threads>
+```
+
+**Principais flags:**
+
+* `-h` — especifica o host de destino (endereço IP ou domínio);
+* `-U` — caminho para o arquivo com a lista de usuários;
+* `-P` — caminho para o arquivo com a lista de senhas;
+* `-M` — módulo/protocolo a ser testado (ex.: `ftp`, `ssh`, `smbnt`);
+* `-t` — número de threads para conexões paralelas (padrão de muitas ferramentas: 16).
+
+Consulte a documentação local (`man medusa`) para parâmetros específicos de cada módulo.
+
+### 5.2 Enumeração (reconhecimento) — nmap (exemplo conceitual)
+
+Para verificar a presença do serviço FTP na porta 21, utilizei uma varredura de reconhecimento com detecção de versão (exemplo conceitual):
+
+```
+nmap -sV -p 21 192.168.56.102
+```
+
+O parâmetro `-p 21` indica a porta e `-sV` tenta identificar a versão do serviço — informação útil para contextualizar a avaliação. No experimento, a versão identificada ajudou a confirmar que o serviço FTP estava presente e acessível; o foco, porém, permaneceu nas tentativas de força-bruta.
+
+### 5.3 Wordlists (exemplo controlado)
+
+Para demonstração criei listas pequenas e controladas localmente (armazenadas em local privado):
+
+```
+echo -e 'user
+msfadmin
+admin
+root' > users.txt
+
+echo -e '123456
+password
+qwerty
+msfadmin' > passwords.txt
+```
+
+Esses exemplos ilustram o formato esperado (uma senha/usuário por linha). Em contextos reais, use apenas wordlists e dados com autorização e observe a legalidade.
+
+### 5.4 Execução conceitual do teste
+
+Com as listas preparadas e threads ajustadas para um impacto controlado, o teste foi executado no laboratório. A execução com threads reduzidas permitiu balancear velocidade e impacto na VM alvo. Na execução observei retorno indicando `ACCOUNT FOUND / SUCCESS` para uma combinação válida, posteriormente confirmada com um teste de acesso ao serviço FTP (conexão FTP e login validado).
+
+**Exemplo conceitual de comando usado no laboratório:**
+
+```
+medusa -h 192.168.56.102 -U users.txt -P passwords.txt -M ftp -t 6
+```
+
+Após a confirmação do sucesso, validei o acesso via cliente FTP de forma controlada (ex.: `ftp 192.168.56.102`) para comprovar a autenticidade do achado.
+
+### 5.5 Interpretação do resultado e mitigação
+
+O teste demonstra como credenciais fracas podem levar a compromissos rápidos. Recomendações práticas para mitigar esse vetor incluem:
+
+* Desativar o serviço FTP se não for necessário;
+* Migrar para SFTP ou habilitar FTPS (TLS) se a transferência segura for requerida;
+* Desabilitar login anônimo e remover contas padrão;
+* Implementar proteção por bloqueio de tentativas (ex.: Fail2ban ou equivalente);
+* Restringir acesso por firewall (permitir apenas IPs confiáveis);
+* Habilitar `chroot` e revisar permissões de diretório;
+* Exigir senhas fortes e, quando aplicável, autenticação por chave (SFTP);
+* Manter o software atualizado e monitorar logs de autenticação.
 
 ---
 
